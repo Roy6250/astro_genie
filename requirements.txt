@@ -1,0 +1,31 @@
+# Web Framework
+fastapi
+uvicorn[standard]
+
+# Async Task Queue
+celery
+redis
+
+# Data Validation
+pydantic
+
+# Database
+pymongo
+
+# HTTP Requests (Astrology APIs)
+requests
+
+# LLM / Token tools (future use)
+openai
+tiktoken
+
+# Vector / Embeddings (local semantic memory)
+sentence-transformers
+numpy
+scikit-learn
+
+# Environment configllama-index
+llama-index-vector-stores-mongodb
+# llama-index-readers-file
+llama-index-embeddings-huggingface
+python-dotenv
