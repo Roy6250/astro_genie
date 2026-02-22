@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.pyc
+*$py.class
+.Python
+
+# Virtual environments
+env/
+venv/
+.venv/
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+*.log
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
