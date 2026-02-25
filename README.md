@@ -34,10 +34,11 @@ astro-intelligence-platform/
 │   ├── safety_agent.py         # Guards risky outputs
 │   └── escalation_agent.py     # Human handoff
 │
-├── mcp/                        # 🔌 Tool-Calling Layer
-│   ├── __init__.py
-│   ├── tool_registry.py        # Tool definitions
-│   └── tool_executor.py        # Executes tool calls
+├── mcp_serv/                   # 🔌 MCP server (SSE) + client for tool calls
+│   ├── server.py               # Run: python -m mcp_serv.server (port 8001)
+│   └── client.py               # call_tool(url, name, arguments)
+├── integrations/               # External APIs (Prokerala, etc.)
+│   └── prokerala/              # Daily horoscope (auth, daily_horoscope, formatter)
 │
 ├── services/                   # External Integrations
 │   ├── __init__.py
@@ -68,5 +69,15 @@ astro-intelligence-platform/
 │
 └── utils/
     ├── logger.py
-    └── helpers.py
+    ├── helpers.py
+    └── zodiac.py               # dob_to_sun_sign() for daily horoscope
+
+---
+
+### Daily horoscope (MCP + Prokerala)
+
+- **Run order**: Start the MCP server, then the FastAPI app.
+  1. From `astro_genie`: `python -m mcp_serv.server` (listens on `http://localhost:8001/sse` by default).
+  2. Start the app (e.g. `uvicorn main:app`).
+- **Env**: `PROKERALA_CLIENT_ID`, `PROKERALA_CLIENT_SECRET` for the horoscope API; `MCP_SERVER_URL` (default `http://localhost:8001/sse`) for the orchestrator.
 

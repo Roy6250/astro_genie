@@ -24,6 +24,11 @@ sentence-transformers
 numpy
 scikit-learn
 
+# MCP (Model Context Protocol) server/client
+mcp
+starlette
+httpx-sse
+
 # Environment configllama-index
 llama-index-vector-stores-mongodb
 # llama-index-readers-file
