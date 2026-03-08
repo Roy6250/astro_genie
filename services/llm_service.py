@@ -1,8 +1,14 @@
 from utils.custom_llm import OurLLM
+import logging
 
 llm = OurLLM()
-def call_llm(prompt):
+logger = logging.getLogger(__name__)
 
+
+def call_llm(prompt):
+    prompt_text = str(prompt or "")
+    logger.info("LLM request chars=%d", len(prompt_text))
     response = llm.complete(prompt)
-    print(response)
-    return response.text.strip()   # .text gives the clean string output
+    text = response.text.strip()   # .text gives the clean string output
+    logger.info("LLM response chars=%d", len(text))
+    return text

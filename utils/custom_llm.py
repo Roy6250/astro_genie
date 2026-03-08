@@ -50,8 +50,9 @@ class OurLLM(CustomLLM):
             response = requests.post(url, headers=headers, json=payload, timeout=120)
             response.raise_for_status()
             data = response.json()
+            text = self._extract_response_text(data)
             return CompletionResponse(
-                text=data["choices"][0]["message"]["content"].strip()
+                text=text
             )
         except requests.RequestException as e:
             return CompletionResponse(text=f"Request error: {str(e)}")
@@ -79,11 +80,42 @@ class OurLLM(CustomLLM):
                 response = await client.post(url, headers=headers, json=payload)
                 response.raise_for_status()
                 data = response.json()
+                text = self._extract_response_text(data)
                 return CompletionResponse(
-                    text=data["choices"][0]["message"]["content"].strip()
+                    text=text
                 )
         except httpx.RequestError as e:
             return CompletionResponse(text=f"HTTP error: {str(e)}")
+
+    @staticmethod
+    def _extract_response_text(data: Mapping[str, Any]) -> str:
+        choices = data.get("choices") or []
+        if not choices:
+            return ""
+
+        first = choices[0] or {}
+        message = first.get("message") or {}
+        content = message.get("content")
+
+        # Some providers can return structured/multi-part content or null content.
+        if isinstance(content, list):
+            chunks: list[str] = []
+            for item in content:
+                if isinstance(item, dict):
+                    txt = item.get("text")
+                    if isinstance(txt, str) and txt.strip():
+                        chunks.append(txt.strip())
+            return "\n".join(chunks).strip()
+
+        if isinstance(content, str):
+            return content.strip()
+
+        for key in ("text", "output_text"):
+            alt = first.get(key)
+            if isinstance(alt, str) and alt.strip():
+                return alt.strip()
+
+        return ""
 
     # ────────────────────────────────────────────────────────────────
     #  3. REAL STREAMING completion (this is the new part!)

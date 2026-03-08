@@ -17,6 +17,8 @@ class MongoManager:
         self.users = self.db["users"]
         self.states = self.db["states"]
         self.chat_history = self.db["chat_history"]
+        self.short_memory = self.db["short_memory"]
+        self.long_memory = self.db["long_memory"]
         self.astro_data = self.db["astro_data"]
         self.numero_data = self.db["numero_data"]
         self.insights = self.db["insights"]
@@ -29,6 +31,8 @@ class MongoManager:
         self.users.create_index([("phone", ASCENDING)], unique=True)
         self.states.create_index([("phone", ASCENDING)], unique=True)
         self.chat_history.create_index([("phone", ASCENDING)])
+        self.short_memory.create_index([("phone", ASCENDING), ("timestamp", ASCENDING)])
+        self.long_memory.create_index([("phone", ASCENDING), ("key", ASCENDING)], unique=True)
         self.astro_data.create_index([("phone", ASCENDING)])
         self.numero_data.create_index([("phone", ASCENDING)])
 
@@ -72,6 +76,55 @@ class MongoManager:
         return list(
             self.chat_history.find({"phone": phone})
             .sort("timestamp", -1)
+            .limit(limit)
+        )
+
+    # ------------------ SHORT / LONG TERM MEMORY ------------------
+
+    def store_short_memory(self, phone: str, role: str, content: str, tags: list[str] | None = None):
+        self.short_memory.insert_one(
+            {
+                "phone": phone,
+                "role": role,
+                "content": content,
+                "tags": tags or [],
+                "timestamp": datetime.utcnow(),
+            }
+        )
+
+    def get_short_memory(self, phone: str, limit: int = 12):
+        return list(
+            self.short_memory.find({"phone": phone})
+            .sort("timestamp", -1)
+            .limit(limit)
+        )
+
+    def upsert_long_memory(
+        self,
+        phone: str,
+        key: str,
+        value: str,
+        source: str = "system",
+        confidence: float = 0.7,
+    ):
+        self.long_memory.update_one(
+            {"phone": phone, "key": key},
+            {
+                "$set": {
+                    "value": value,
+                    "source": source,
+                    "confidence": float(confidence),
+                    "updated_at": datetime.utcnow(),
+                },
+                "$setOnInsert": {"created_at": datetime.utcnow()},
+            },
+            upsert=True,
+        )
+
+    def get_long_memory(self, phone: str, limit: int = 30):
+        return list(
+            self.long_memory.find({"phone": phone})
+            .sort("updated_at", -1)
             .limit(limit)
         )
 

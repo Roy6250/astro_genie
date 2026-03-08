@@ -31,6 +31,7 @@ async def call_tool(
     :return: Tool result as string (text content) or dict; user-friendly error string on failure.
     """
     try:
+        logger.info("MCP call start url=%s tool=%s args_keys=%s", url, name, sorted(list(arguments.keys())))
         async with sse_client(url, timeout=timeout, sse_read_timeout=timeout) as (read_stream, write_stream):
             async with ClientSession(read_stream=read_stream, write_stream=write_stream) as session:
                 await session.initialize()
@@ -40,12 +41,16 @@ async def call_tool(
                     for c in (result.content or []):
                         if getattr(c, "text", None):
                             parts.append(c.text)
-                    return " ".join(parts) or "Tool returned an error."
+                    msg = " ".join(parts) or "Tool returned an error."
+                    logger.warning("MCP call error tool=%s chars=%d", name, len(msg))
+                    return msg
                 parts = []
                 for c in (result.content or []):
                     if getattr(c, "text", None):
                         parts.append(c.text)
-                return "\n".join(parts).strip() if parts else ""
+                output = "\n".join(parts).strip() if parts else ""
+                logger.info("MCP call success tool=%s chars=%d", name, len(output))
+                return output
     except asyncio.TimeoutError:
         logger.warning("MCP call_tool timeout: %s", url)
         return "The horoscope service is taking too long. Please try again in a moment."

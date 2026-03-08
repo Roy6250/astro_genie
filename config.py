@@ -15,3 +15,11 @@ PROKERALA_CLIENT_SECRET = os.getenv("PROKERALA_CLIENT_SECRET", "i6dEokjLj8iFR78a
 
 # MCP server URL for orchestrator (SSE endpoint, e.g. http://localhost:8001/sse)
 MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://localhost:8001/sse")
+
+# Wasender webhook verification (optional but recommended).
+# Wasender sends this value in header: X-Webhook-Signature
+WASENDER_WEBHOOK_SECRET = os.getenv("WASENDER_WEBHOOK_SECRET", "")
+
+# Wasender outbound messaging
+WASENDER_API_BASE_URL = os.getenv("WASENDER_API_BASE_URL", "https://www.wasenderapi.com")
+WASENDER_API_KEY = os.getenv("WASENDER_API_KEY", "")

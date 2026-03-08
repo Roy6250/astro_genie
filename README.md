@@ -81,3 +81,35 @@ astro-intelligence-platform/
   2. Start the app (e.g. `uvicorn main:app`).
 - **Env**: `PROKERALA_CLIENT_ID`, `PROKERALA_CLIENT_SECRET` for the horoscope API; `MCP_SERVER_URL` (default `http://localhost:8001/sse`) for the orchestrator.
 
+### Kundli tool (MCP + Prokerala)
+
+- MCP tool name: `get_kundli`
+- Required args:
+  - `date_of_birth` (`YYYY-MM-DD`)
+  - `place` (city/place name)
+- Optional args:
+  - `time_of_birth` (`HH:MM`, default `12:00`)
+  - `latitude`, `longitude` (if you already have coordinates)
+  - `timezone` (IANA zone, e.g. `Asia/Kolkata`)
+  - `ayanamsa` (`1`/`3`/`5` or `lahiri`/`raman`/`kp`)
+  - `la` (`en`/`hi`/`ta`/`ml`) or `language` alias
+  - `year_length` (`1` for 365.25 days, `0` for 360 days)
+  - `include_dasha_periods` (default `true`)
+  - `include_mangal_dosha` (default `true`)
+- Location handling:
+  - If coordinates are not provided, the tool resolves `place` using free Open-Meteo geocoding.
+- Response includes:
+  - `kundli`
+  - `dasha_periods` (when enabled)
+  - `mangal_dosha` (when enabled)
+
+### WhatsApp webhook (Wasender)
+
+- Set webhook URL in Wasender session settings to `https://<your-domain>/webhook`.
+- Subscribe to message events (recommended: `messages.received`; optionally `messages.upsert`).
+- Optional security: set `WASENDER_WEBHOOK_SECRET` in `.env`; incoming `X-Webhook-Signature` must match.
+- Local endpoints:
+  - `POST /webhook` for Wasender callbacks
+  - `GET /webhook` health check
+  - `POST /simulate-message` for manual local testing
+
