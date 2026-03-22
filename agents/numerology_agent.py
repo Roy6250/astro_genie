@@ -152,64 +152,72 @@ Be creative but keep values concise. Respond with only the JSON object.
 # ────────────────────────────────────────────────
 
 
-def format_numerology_message(reading: NumerologyReading | dict) -> str:
-    """Build user-facing message from structured reading (bullet-style, emoji-rich)."""
+def _first_token(text: str, fallback: str) -> str:
+    cleaned = str(text or "").strip()
+    if not cleaned:
+        return fallback
+    token = cleaned.split(",", 1)[0].strip()
+    return token if token else fallback
+
+
+def _truncate(text: str, limit: int = 100) -> str:
+    msg = str(text or "").strip()
+    if len(msg) <= limit:
+        return msg
+    return msg[: limit - 1].rstrip() + "…"
+
+
+def format_numerology_message(reading: NumerologyReading | dict, user_name: str | None = None) -> str:
+    """Build a compact, scannable first-reading message for WhatsApp."""
     if isinstance(reading, NumerologyReading):
         r = reading.model_dump(mode="json")
     else:
         r = reading
 
-    lines = [
-        "✨ Your Numerology Vibes ✨",
-        "",
-        f"🔢 Life Path: {r['life_path_number']} · Mulank: {r['mulank']}",
-    ]
-    if r.get("destiny_number"):
-        lines.append(f"   Destiny Number: {r['destiny_number']}")
-    lines.append("")
-
     lucky_nums = r.get("lucky_numbers") or []
-    if lucky_nums:
-        lines.append("🍀 Lucky numbers: " + ", ".join(str(n) for n in lucky_nums))
-    if r.get("today_vibe_number"):
-        lines.append(f"   Today's vibe: {r['today_vibe_number']}")
-    lines.append("")
-
     colors = r.get("lucky_colors") or []
-    if colors:
-        lines.append("🎨 Lucky colors:")
-        for c in colors:
-            name = c.get("name", "") if isinstance(c, dict) else getattr(c, "name", "")
-            reason = c.get("reason", "") if isinstance(c, dict) else getattr(c, "reason", "")
-            lines.append(f"   · {name} — {reason}")
-        lines.append("")
-
     days = r.get("lucky_days") or []
-    if days:
-        lines.append("📅 Lucky days:")
-        for d in days:
-            day = d.get("day", "") if isinstance(d, dict) else getattr(d, "day", "")
-            reason = d.get("reason", "") if isinstance(d, dict) else getattr(d, "reason", "")
-            lines.append(f"   · {day} — {reason}")
-        lines.append("")
-
     stone = r.get("lucky_stone")
+    first_name = _first_token(user_name or "", "there").title()
+    life_trait = _first_token(r.get("life_path_traits", ""), "focused")
+    mulank_trait = _first_token(r.get("mulank_traits", ""), "balanced")
+    power_phrase = _truncate(r.get("power_phrase", ""), 50)
+    quick_tip = _truncate(r.get("quick_tip", ""), 110) or "Take one clear step toward your top goal today."
+
+    primary_color = ""
+    if colors:
+        first_color = colors[0]
+        primary_color = first_color.get("name", "") if isinstance(first_color, dict) else getattr(first_color, "name", "")
+    primary_day = ""
+    if days:
+        first_day = days[0]
+        primary_day = first_day.get("day", "") if isinstance(first_day, dict) else getattr(first_day, "day", "")
+    stone_name = ""
     if stone:
-        name = stone.get("name", "") if isinstance(stone, dict) else getattr(stone, "name", "")
-        expl = stone.get("explanation", "") if isinstance(stone, dict) else getattr(stone, "explanation", "")
-        lines.append(f"💎 Lucky stone: {name}")
-        lines.append(f"   {expl}")
-        lines.append("")
+        stone_name = stone.get("name", "") if isinstance(stone, dict) else getattr(stone, "name", "")
 
-    if r.get("power_phrase"):
-        lines.append(f"🌟 Your power phrase: \"{r['power_phrase']}\"")
-        lines.append("")
-    if r.get("quick_tip"):
-        lines.append(f"✨ Quick tip: {r['quick_tip']}")
-        lines.append("")
-    if r.get("follow_up_question"):
-        lines.append(f"🔮 {r['follow_up_question']}")
+    lucky_num_text = ", ".join(str(n) for n in lucky_nums[:3]) if lucky_nums else "-"
+    color_text = primary_color or "-"
+    day_text = primary_day or "-"
+    remedy_text = f"Wear/carry {stone_name} for grounded confidence." if stone_name else "Take 3 mindful breaths before important calls."
+    unique_line = power_phrase or f"Unique trait: {life_trait} + {mulank_trait}"
 
+    lines = [
+        f"✨ {first_name}, your first reading is ready",
+        "",
+        f"🔢 Core energy: Life Path {r['life_path_number']} | Mulank {r['mulank']}",
+        f"🌟 {unique_line}",
+        "",
+        f"🍀 Lucky energies: {lucky_num_text} | {color_text} | {day_text}",
+        f"🧿 Remedy: {remedy_text}",
+        f"✅ One action today: {quick_tip}",
+        "",
+        "Reply with a number or your own question:",
+        "1) Career & money",
+        "2) Love & relationships",
+        "3) Life purpose",
+        "4) Today's horoscope",
+    ]
     return "\n".join(lines).strip()
 
 
@@ -336,6 +344,6 @@ async def call_numerology_agent(profile: dict) -> dict:
     except Exception:
         return {"message": "Sorry, something went wrong generating your reading. Please try again! 🌟"}
 
-    message = format_numerology_message(reading)
+    message = format_numerology_message(reading, user_name=name)
     data = reading.model_dump(mode="json")
     return {"data": data, "message": message}

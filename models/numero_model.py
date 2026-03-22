@@ -43,9 +43,9 @@ class NumerologyReading(BaseModel):
     """Full numerology reading: calculated numbers, traits, and generated content. Stored in Mongo and used to build the display message."""
 
     # Core calculated
-    life_path_number: int = Field(..., ge=1, le=9, description="Life path number 1–9")
+    life_path_number: int = Field(..., ge=1, le=33, description="Life path number 1–9 (or master 11/22/33)")
     mulank: int = Field(..., ge=1, le=9, description="Mulank 1–9")
-    destiny_number: Optional[int] = Field(None, ge=1, le=9, description="Destiny number when name provided")
+    destiny_number: Optional[int] = Field(None, ge=1, le=33, description="Destiny number when name provided (can include master numbers)")
     life_path_traits: str = Field(..., description="Traits for life path number")
     mulank_traits: str = Field(..., description="Traits for mulank")
     destiny_traits: Optional[str] = Field(None, description="Traits for destiny number when name provided")

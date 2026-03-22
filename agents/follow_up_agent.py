@@ -4,6 +4,7 @@ Use when the user already has a reading and returns to ask more.
 """
 
 import json
+import re
 from services.llm_service import call_llm
 
 
@@ -54,9 +55,45 @@ User's question: {question}
 
 Answer as their personal guide:"""
 
+TOPIC_HINTS: dict[str, tuple[tuple[str, ...], str]] = {
+    "career": (
+        ("1", "career", "job", "work", "money", "finance", "salary", "business"),
+        "Please focus on career and money guidance for me based on my stored numerology profile. Keep it practical and concise.",
+    ),
+    "relationship": (
+        ("2", "love", "relationship", "partner", "marriage", "romance", "dating"),
+        "Please focus on love and relationship guidance for me based on my stored numerology profile. Keep it warm and concise.",
+    ),
+    "life_purpose": (
+        ("3", "purpose", "calling", "mission", "direction", "life goal", "path"),
+        "Please focus on life purpose guidance for me based on my stored numerology profile. Keep it clear and actionable.",
+    ),
+    "daily_horoscope": (
+        ("4", "today horoscope", "daily horoscope", "daily prediction", "today's horoscope"),
+        "",
+    ),
+}
+
 
 class FollowUpAgent:
     """Answers user questions using stored persona (numerology/astrology) from astro_data."""
+
+    @staticmethod
+    def map_topic_message(message: str) -> tuple[str | None, str | None]:
+        """
+        Lightweight mapper for numeric or free-text topic picks.
+        Returns (topic_key, rewritten_prompt). Topic 4 is routed in orchestrator.
+        """
+        text = str(message or "").strip().lower()
+        if not text:
+            return None, None
+        compact = re.sub(r"\s+", " ", text)
+        for topic, (terms, prompt) in TOPIC_HINTS.items():
+            if compact == terms[0]:
+                return topic, prompt
+            if any(term in compact for term in terms[1:]):
+                return topic, prompt
+        return None, None
 
     def answer(self, phone: str, message: str, persona: dict) -> str:
         """
@@ -67,5 +104,7 @@ class FollowUpAgent:
         :return: reply string to send to the user
         """
         context = _persona_context(persona or {})
-        prompt = FOLLOW_UP_PROMPT.format(context=context, question=message.strip())
+        _, mapped_prompt = self.map_topic_message(message)
+        question = mapped_prompt or message.strip()
+        prompt = FOLLOW_UP_PROMPT.format(context=context, question=question)
         return call_llm(prompt)

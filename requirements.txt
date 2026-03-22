@@ -34,3 +34,4 @@ llama-index-vector-stores-mongodb
 # llama-index-readers-file
 llama-index-embeddings-huggingface
 python-dotenv
+google-generativeai

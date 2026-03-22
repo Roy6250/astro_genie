@@ -112,3 +112,28 @@ Message: {text}
                     lines.append(f"- {role}: {content[:220]}")
 
         return "\n".join(lines).strip()
+
+    def get_returning_user_context(self, phone: str, profile: dict | None = None, persona: dict | None = None) -> dict[str, Any]:
+        """
+        Compact memory-aware context for welcome-back UX.
+        """
+        out: dict[str, Any] = {"is_returning": False, "display_name": "", "life_path": None}
+        profile = profile if isinstance(profile, dict) else {}
+        persona = persona if isinstance(persona, dict) else {}
+
+        has_short_history = bool(self.mongo.get_short_memory(phone, limit=1))
+        has_long_memory = bool(self.mongo.get_long_memory(phone, limit=1))
+        out["is_returning"] = bool(persona) and (has_short_history or has_long_memory)
+
+        name = str(profile.get("name") or "").strip()
+        if not name:
+            for item in self.mongo.get_long_memory(phone, limit=10):
+                if str(item.get("key") or "").strip().lower() == "preferred_name":
+                    name = str(item.get("value") or "").strip()
+                    if name:
+                        break
+        out["display_name"] = name
+
+        num = persona.get("numerology") if isinstance(persona.get("numerology"), dict) else {}
+        out["life_path"] = num.get("life_path_number")
+        return out

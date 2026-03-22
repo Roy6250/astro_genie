@@ -105,6 +105,11 @@ async def wasender_webhook(request: Request):
     """
     signature = request.headers.get("X-Webhook-Signature", "").strip()
     if WASENDER_WEBHOOK_SECRET and signature != WASENDER_WEBHOOK_SECRET:
+        logger.warning(
+            "Webhook signature mismatch got=%r expected=%r",
+            signature[:12] + "..." if signature else "",
+            WASENDER_WEBHOOK_SECRET[:12] + "..." if WASENDER_WEBHOOK_SECRET else "",
+        )
         return JSONResponse(status_code=401, content={"status": "unauthorized"})
 
     try:
@@ -120,6 +125,11 @@ async def wasender_webhook(request: Request):
     phone, message, message_id = _extract_inbound_from_wasender(payload)
     if not phone or not message:
         # Non-message or unsupported event shape: ACK with 200 quickly.
+        logger.info(
+            "Ignoring webhook event=%r keys=%s",
+            str(payload.get("event") or ""),
+            list((payload.get("data") or {}).keys()) if isinstance(payload.get("data"), dict) else [],
+        )
         return {"status": "ignored"}
     if _is_duplicate_message(message_id):
         logger.info("Skipping duplicate inbound message id=%s", message_id)
